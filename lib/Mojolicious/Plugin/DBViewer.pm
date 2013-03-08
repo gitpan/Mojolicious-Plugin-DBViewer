@@ -2,14 +2,12 @@ use 5.008001;
 package Mojolicious::Plugin::DBViewer;
 use Mojo::Base 'Mojolicious::Plugin';
 
-use File::Basename 'dirname';
 use Cwd 'abs_path';
-use Mojolicious::Plugin::DBViewer::Command;
 use DBIx::Custom;
 use Validator::Custom;
 use Carp 'croak';
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 has 'command';
 has 'prefix';
@@ -17,15 +15,6 @@ has 'validator';
 has 'dbi';
 
 sub _driver { lc shift->dbi->dbh->{Driver}->{Name} }
-
-sub add_template_path {
-  my ($self, $renderer, $class) = @_;
-  $class =~ s/::/\//g;
-  $class .= '.pm';
-  my $public = abs_path $INC{$class};
-  $public =~ s/\.pm$//;
-  push @{$renderer->paths}, "$public/templates";
-}
 
 sub register {
   my ($self, $app, $conf) = @_;
@@ -73,8 +62,14 @@ sub register {
   else { croak "Mojolicious::Plugin::DBViewer don't support $driver" }
   $self->command($command);
   
-  # Add template path
-  $self->add_template_path($app->renderer, __PACKAGE__);
+  # Add public and template path
+  my $class = __PACKAGE__;
+  $class =~ s/::/\//g;
+  $class .= '.pm';
+  my $base_path = abs_path $INC{$class};
+  $base_path =~ s/\.pm$//;
+  push @{$app->static->paths}, "$base_path/public";
+  push @{$app->renderer->paths}, "$base_path/templates";
   
   # Routes
   my $r = $conf->{route} // $app->routes;
@@ -87,7 +82,8 @@ sub register {
       plugin => $self,
       prefix => $self->prefix,
       main_title => 'DBViewer',
-      driver => $driver
+      driver => $driver,
+      dbviewer => $self
     );
     
     # Default
@@ -95,40 +91,43 @@ sub register {
     
     # Tables
     my $utilities = [
-      {path => 'showcreatetables', title => 'Show create tables'},
-      {path => 'showselecttables', title => 'Show select tables'},
-      {path => 'showprimarykeys', title => 'Show primary keys'},
-      {path => 'shownullallowedcolumns', title => 'Show null allowed columns'},
+      {path => 'create-tables', title => 'Create tables'},
+      {path => 'primary-keys', title => 'Primary keys'},
+      {path => 'null-allowed-columns', title => 'Null allowed columns'},
     ];
     if ($driver eq 'mysql') {
       push @$utilities,
-        {path => 'showdatabaseengines', title => 'Show database engines'},
-        {path => 'showcharsets', title => 'Show charsets'}
+        {path => 'database-engines', title => 'Database engines'},
+        {path => 'charsets', title => 'Charsets'}
     }
+    push @$utilities,
+      {path => 'select-statements', title => 'Selects statements'};
+    
+    # Tables
     $r->get('/tables')->to('#tables', utilities => $utilities);
     
     # Table
     $r->get('/table')->to('#table');
     
     # Show create tables
-    $r->get('/showcreatetables')->to('#showcreatetables');
+    $r->get('/create-tables')->to('#create_tables');
     
     # Show select tables
-    $r->get('/showselecttables')->to('#showselecttables');
+    $r->get('/select-statements')->to('#select_statements');
     
     # Show primary keys
-    $r->get('/showprimarykeys')->to('#showprimarykeys');
+    $r->get('/primary-keys')->to('#primary_keys');
     
     # Show null allowed columns
-    $r->get('/shownullallowedcolumns')->to('#shownullallowedcolumns');
+    $r->get('/null-allowed-columns')->to('#null_allowed_columns');
     
     # Select
     $r->get('/select')->to('#select');
     
     # MySQL Only
     if ($driver eq 'mysql') {
-      $r->get('/showdatabaseengines')->to('#showdatabaseengines');
-      $r->get('/showcharsets')->to('#showcharsets');
+      $r->get('/database-engines')->to('#database_engines');
+      $r->get('/charsets')->to('#charsets');
     }
   }
 }
@@ -272,5 +271,12 @@ by C<MOJOLICIOUS_PLUGIN_DBVIEWER_DEPRECATION>
 environment variable.
 
 EXPERIMENTAL features will be changed without warnings.
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2013 Yuki Kimoto, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
 
 =cut
