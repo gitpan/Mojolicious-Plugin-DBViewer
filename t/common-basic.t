@@ -13,6 +13,7 @@ my $password = $DBViewer::password;
 my $create_table1 = $DBViewer::create_table1;
 my $create_table2 = $DBViewer::create_table2;
 my $create_table3 = $DBViewer::create_table3;
+my $create_table4 = $DBViewer::create_table4;
 my $create_table_paging = $DBViewer::create_table_paging;
 my $test_skip_message = $DBViewer::test_skip_message;
 $test_skip_message = 'common.t is always skipped'
@@ -86,9 +87,12 @@ $t->get_ok("/dbviewer/table?database=$database&table=table1")
   ->content_like(qr/column1_2/);
 $t->link_ok("/dbviewer/table?database=$database&table=table1");
 
-# Select page
+# Select pate
 $t->get_ok("/dbviewer/select?database=$database&table=table1")
-  ->content_like(qr/table1.*Select/s)
+  ->content_like(qr/table1.*Select/s);
+
+# Select page(JSON)
+$t->get_ok("/dbviewer/select?database=$database&table=table1&output=json")
   ->content_like(qr/column1_1/)
   ->content_like(qr/column1_2/)
   ->content_like(qr/1/)
@@ -96,9 +100,8 @@ $t->get_ok("/dbviewer/select?database=$database&table=table1")
   ->content_like(qr/3/)
   ->content_like(qr/4/);
 
-# Select page
-$t->get_ok("/dbviewer/select?database=$database&table=table1&condition_column=column1_2&condition_value=4")
-  ->content_like(qr/table1.*Select/s)
+# Select page(JSON)
+$t->get_ok("/dbviewer/select?database=$database&table=table1&condition_column=column1_2&condition_value=4&operator=like&output=json")
   ->content_like(qr/column1_1/)
   ->content_like(qr/column1_2/)
   ->content_unlike(qr/\b2\b/)
@@ -307,7 +310,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page&page=11")
   ->content_like(qr/page=8/)
   ->content_like(qr/page=9/)
   ->content_like(qr/page=10/)
-  ->content_like(qr#<b>11</b>#)
+  ->content_like(qr/page=11/)
   ->content_like(qr/page=12/)
   ->content_like(qr/page=13/)
   ->content_like(qr/page=14/)
@@ -332,7 +335,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page&page=12")
   ->content_like(qr/page=9/)
   ->content_like(qr/page=10/)
   ->content_like(qr/page=11/)
-  ->content_like(qr#<b>12</b>#)
+  ->content_like(qr/page=12/)
   ->content_like(qr/page=13/)
   ->content_like(qr/page=14/)
   ->content_like(qr/page=15/)
@@ -400,4 +403,157 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   ->content_like(qr/page=6/)
   ->content_like(qr/page=7/)
   ->content_like(qr/page=8/)
-  ->content_like(qr/page=9/)
+  ->content_like(qr/page=9/);
+
+# Condition
+{
+  my $url = "/dbviewer/select?database=$database&table=table4";
+  my $opt = 'output=json&sort-key=k1&order=asc';
+  eval { $dbi->execute('drop table table4') };
+  $dbi->execute($create_table4);
+  my $model = $dbi->create_model(table => 'table4');
+  
+  # contains
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 21, k2 => 1});
+  $model->insert({k1 => 121, k2 => 1});
+  $model->insert({k1 => 3, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=2&operator=contains")
+    ->json_is('/rows', [
+      [2, 1], 
+      [12, 1],
+      [21, 1],
+      [121, 1]
+    ])
+    ;
+  
+  # like
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 21, k2 => 1});
+  $model->insert({k1 => 121, k2 => 1});
+  $model->insert({k1 => 3, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=%2%&operator=contains")
+    ->json_is('/rows', [
+      [2, 1], 
+      [12, 1],
+      [21, 1],
+      [121, 1]
+    ])
+    ;
+
+  # like
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 21, k2 => 1});
+  $model->insert({k1 => 121, k2 => 1});
+  $model->insert({k1 => 3, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=%2%&operator=like")
+    ->json_is('/rows', [
+      [2, 1], 
+      [12, 1],
+      [21, 1],
+      [121, 1]
+    ])
+    ;
+  
+  # =
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=2&operator==")
+    ->json_is('/rows', [
+      [2, 1], 
+    ])
+    ;
+  
+  # <
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 22, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=<")
+    ->json_is('/rows', [
+      [2, 1], 
+    ])
+    ;
+
+  # <=
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 22, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=<=")
+    ->json_is('/rows', [
+      [2, 1], 
+      [12, 1], 
+    ])
+    ;
+
+  # >
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 22, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=>")
+    ->json_is('/rows', [
+      [22, 1], 
+    ])
+    ;
+  
+  # >=
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 12, k2 => 1});
+  $model->insert({k1 => 22, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=>=")
+    ->json_is('/rows', [
+      [12, 1], 
+      [22, 1], 
+    ])
+    ;
+
+  # is null
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => undef, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&operator=is null")
+    ->json_is('/rows', [
+      [undef, 1], 
+    ])
+    ;
+
+  # is not null
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => undef, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k1&operator=is not null")
+    ->json_is('/rows', [
+      [2, 1], 
+    ])
+    ;
+
+  # is space
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 2, k2 => ''});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k2&operator=is space")
+    ->json_is('/rows', [
+      [2, ''], 
+    ])
+    ;
+
+  # is not space
+  $model->delete_all;
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 2, k2 => ''});
+  $t->get_ok("$url&$opt&table=table4&condition_column=k2&operator=is not space")
+    ->json_is('/rows', [
+      [2, 1], 
+    ])
+    ;
+
+}

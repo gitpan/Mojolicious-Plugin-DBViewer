@@ -22,4 +22,4 @@ requires:
   Data::Page: 2.02
   Mojolicious: 2.59
   Test::More: 0
-version: 0.02
+version: 0.03
