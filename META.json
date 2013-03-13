@@ -32,13 +32,15 @@
       },
       "runtime" : {
          "requires" : {
+            "DBIx::Connector" : "0.52",
             "DBIx::Custom" : "0.25",
             "Data::Page" : "2.02",
             "Mojolicious" : "2.59",
-            "Test::More" : 0
+            "Test::More" : 0,
+            "Validator::Custom" : "0.15"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.03"
+   "version" : "0.04"
 }
