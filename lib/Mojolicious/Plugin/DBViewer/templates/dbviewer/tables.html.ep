@@ -20,18 +20,15 @@
 
 % layout 'dbviewer_common', title => "Tables in $database";
 
-  <ul class="nav nav-pills">
-    <li class="active">
-      <a href="#"><%= $database %></a>
-    </li>
-  </ul>
-  <h2>Tables (<%= @$tables %>)</h2>
+  %= include '/dbviewer_include/navi';
+
+  <h3>Tables (<%= @$tables %>)</h3>
   <table class="table table-bordered">
     % for (my $i = 0; $i < @$tables; $i += 3) {
       <tr>
         % for my $k (0 .. 2) {
           <td>
-            <a href="<%= url_for("/$prefix/table")->query(database => $database, table => $tables->[$i + $k]) %>">
+            <a href="<%= url_for("$sprefix/table")->query(database => $database, table => $tables->[$i + $k]) %>">
               <%= $tables->[$i + $k] %>
             </a>
           </td>
@@ -40,13 +37,13 @@
     % }
   </table>
 
-  <h2>Utilities</h2>
+  <h3>Utilities</h3>
   <ul class="nav nav-list">
     % for my $utility (@$utilities) {
       % my $path = $utility->{path};
       % my $title = $utility->{title};
       <li>
-        <a href="<%= url_for("/$prefix/$path")->query(database => $database) %>">
+        <a href="<%= url_for("$sprefix/$path")->query(database => $database) %>">
           <i class="icon-circle-arrow-right"></i>
           <%= $title %>
         </a>
