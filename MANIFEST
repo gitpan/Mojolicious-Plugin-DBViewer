@@ -8,15 +8,14 @@ lib/Mojolicious/Plugin/DBViewer/public/css/bootstrap.css
 lib/Mojolicious/Plugin/DBViewer/public/img/glyphicons-halflings-white.png
 lib/Mojolicious/Plugin/DBViewer/public/img/glyphicons-halflings.png
 lib/Mojolicious/Plugin/DBViewer/public/js/bootstrap.js
-lib/Mojolicious/Plugin/DBViewer/public/js/bootstrap/js/bootstrap.min.js
 lib/Mojolicious/Plugin/DBViewer/public/js/jquery-1.9.1.js
 lib/Mojolicious/Plugin/DBViewer/SQLite/Command.pm
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/charsets.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/create_tables.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/database_engines.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/default.html.ep
+lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/navi.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/null_allowed_columns.html.ep
-lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/page_navi.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/primary_keys.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/select.html.ep
 lib/Mojolicious/Plugin/DBViewer/templates/dbviewer/select_statements.html.ep
@@ -32,6 +31,7 @@ t/common-basic.t
 t/load.t
 t/mysql-basic.t
 t/mysql-only.t
+t/mysql-test-empty-prefix.pl
 t/mysql-test.pl
 t/sqlite-basic.t
 t/sqlite-test.pl
