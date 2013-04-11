@@ -36,12 +36,12 @@
             "DBIx::Custom" : "0.25",
             "Data::Page" : "2.02",
             "Mojolicious" : "2.59",
-            "Mojolicious::Plugin::AutoRoute" : "0.07",
+            "Mojolicious::Plugin::AutoRoute" : "0.08",
             "Test::More" : 0,
             "Validator::Custom" : "0.15"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.14"
+   "version" : "0.15"
 }
