@@ -25,4 +25,4 @@ requires:
   Mojolicious::Plugin::AutoRoute: 0.08
   Test::More: 0
   Validator::Custom: 0.15
-version: 0.15
+version: 0.16
