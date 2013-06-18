@@ -1,5 +1,7 @@
+0.21
+  - fix join mode column order bug.
 0.20
-  - fixex join mode display bug.
+  - fix join mode display bug.
 0.19
   - add join option and join mode.
 0.18
