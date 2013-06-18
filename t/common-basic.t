@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use DBIx::Custom;
 use Test::Mojo;
+use utf8;
+use Encode qw/encode decode/;
 
 no warnings 'once';
 
@@ -102,10 +104,8 @@ $t->get_ok("/dbviewer/select?database=$database&table=table1&output=json")
   ->content_like(qr/4/)
 ;
 
-__END__
-
 # Select page(JSON)
-$t->get_ok("/dbviewer/select?database=$database&table=table1&condition_column=column1_2&condition_value=4&operator=like&output=json")
+$t->get_ok("/dbviewer/select?database=$database&table=table1&c1=column1_2&v1=4&op1=like&output=json")
   ->content_like(qr/column1_1/)
   ->content_like(qr/column1_2/)
   ->content_unlike(qr/\b2\b/)
@@ -412,7 +412,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
 # Condition
 {
   my $url = "/dbviewer/select?database=$database&table=table4";
-  my $opt = 'output=json&sort-key=k1&order=asc';
+  my $opt = 'output=json&sk1=k1&so=asc';
   eval { $dbi->execute('drop table table4') };
   $dbi->execute($create_table4);
   my $model = $dbi->create_model(table => 'table4');
@@ -423,7 +423,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 21, k2 => 1});
   $model->insert({k1 => 121, k2 => 1});
   $model->insert({k1 => 3, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=2&operator=contains")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=2&op1=contains")
     ->json_is('/rows', [
       [2, 1], 
       [12, 1],
@@ -439,7 +439,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 21, k2 => 1});
   $model->insert({k1 => 121, k2 => 1});
   $model->insert({k1 => 3, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=%2%&operator=contains")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=%2%&op1=contains")
     ->json_is('/rows', [
       [2, 1], 
       [12, 1],
@@ -455,12 +455,24 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 21, k2 => 1});
   $model->insert({k1 => 121, k2 => 1});
   $model->insert({k1 => 3, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=%2%&operator=like")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=%2%&op1=like")
     ->json_is('/rows', [
       [2, 1], 
       [12, 1],
       [21, 1],
       [121, 1]
+    ])
+    ;
+    
+  # in
+  $model->delete_all;
+  $model->insert({k1 => 1, k2 => 1});
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 3, k2 => 1});
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1= 1  2 &op1=in")
+    ->json_is('/rows', [
+      [1, 1], 
+      [2, 1],
     ])
     ;
   
@@ -468,7 +480,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->delete_all;
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 12, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=2&operator==")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=2&op1==")
     ->json_is('/rows', [
       [2, 1], 
     ])
@@ -479,7 +491,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 12, k2 => 1});
   $model->insert({k1 => 22, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=<")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=12&op1=<")
     ->json_is('/rows', [
       [2, 1], 
     ])
@@ -490,7 +502,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 12, k2 => 1});
   $model->insert({k1 => 22, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=<=")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=12&op1=<=")
     ->json_is('/rows', [
       [2, 1], 
       [12, 1], 
@@ -502,7 +514,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 12, k2 => 1});
   $model->insert({k1 => 22, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=>")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=12&op1=>")
     ->json_is('/rows', [
       [22, 1], 
     ])
@@ -513,7 +525,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 12, k2 => 1});
   $model->insert({k1 => 22, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&condition_value=12&operator=>=")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&v1=12&op1=>=")
     ->json_is('/rows', [
       [12, 1], 
       [22, 1], 
@@ -524,7 +536,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->delete_all;
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => undef, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&operator=is null")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&op1=is null")
     ->json_is('/rows', [
       [undef, 1], 
     ])
@@ -534,7 +546,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->delete_all;
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => undef, k2 => 1});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k1&operator=is not null")
+  $t->get_ok("$url&$opt&table=table4&c1=k1&op1=is not null")
     ->json_is('/rows', [
       [2, 1], 
     ])
@@ -544,7 +556,7 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->delete_all;
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 2, k2 => ''});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k2&operator=is space")
+  $t->get_ok("$url&$opt&table=table4&c1=k2&op1=is space")
     ->json_is('/rows', [
       [2, ''], 
     ])
@@ -554,12 +566,82 @@ $t->get_ok("/dbviewer/select?database=$database&table=table_page")
   $model->delete_all;
   $model->insert({k1 => 2, k2 => 1});
   $model->insert({k1 => 2, k2 => ''});
-  $t->get_ok("$url&$opt&table=table4&condition_column=k2&operator=is not space")
+  $t->get_ok("$url&$opt&table=table4&c1=k2&op1=is not space")
     ->json_is('/rows', [
       [2, 1], 
     ])
     ;
+  
+  # Multiple condtions(or)
+  $model->delete_all;
+  $model->insert({k1 => 1, k2 => 1});
+  $model->insert({k1 => 2, k2 => 1});
+  $model->insert({k1 => 3, k2 => 1});
+  $model->insert({k1 => 4, k2 => 1});
+  $model->insert({k1 => 5, k2 => 1});
+  
+  $t->get_ok("$url&$opt&table=table4&u=or&c1=k1&op1==&v1=1&c2=k1&op2=in&v2=2 3&c3=k1&op3==&v3=4")
+    ->json_is('/rows', [
+      [1, 1], 
+      [2, 1], 
+      [3, 1], 
+      [4, 1], 
+    ])
+    ;
 
+  # Multiple condtions(and)
+  $model->delete_all;
+  $model->insert({k1 => 1, k2 => 1});
+  $model->insert({k1 => 2, k2 => 2});
+  $model->insert({k1 => 3, k2 => 1});
+  $model->insert({k1 => 4, k2 => 1});
+  $model->insert({k1 => 5, k2 => 1});
+  
+  $t->get_ok("$url&$opt&table=table4&u=and&c1=k1&op1==&v1=2&c2=k2&op2=in&v2=2")
+    ->json_is('/rows', [
+      [2, 2], 
+    ])
+    ;
+    
+  # Multiple condtions(charset)
+  $model->delete_all;
+  $model->insert({k1 => 1, k2 => encode('UTF-8', 'あ')});
+  $model->insert({k1 => 2, k2 => encode('UTF-8', 'い')});
+  $model->insert({k1 => 3, k2 => encode('UTF-8', 'う')});
+  $model->insert({k1 => 4, k2 => encode('UTF-8', 'え')});
+  $model->insert({k1 => 5, k2 => encode('UTF-8', 'お')});
+
+  $t->get_ok("$url&$opt&table=table4&u=or&c1=k2&op1=contains&v1=あ&c2=k2&op2=in&v2=い う&c3=k2&op3==&v3=え");
+  $t->json_is('/rows', [
+      [1, 'あ'], 
+      [2, 'い'], 
+      [3, 'う'], 
+      [4, 'え'], 
+    ])
+    ;
+}
+
+# Order
+{
+  my $url = "/dbviewer/select?database=$database&table=table4";
+  my $opt = 'output=json';
+  eval { $dbi->execute('drop table table4') };
+  $dbi->execute($create_table4);
+  my $model = $dbi->create_model(table => 'table4');
+  
+  # Two order
+  $model->insert({k1 => 1, k2 => 3});
+  $model->insert({k1 => 1, k2 => 4});
+  $model->insert({k1 => 2, k2 => 3});
+  $model->insert({k1 => 2, k2 => 4});
+  $t->get_ok("$url&$opt&table=table4&sk1=k1&so1=desc&sk2=k2&so2=desc")
+    ->json_is('/rows', [
+      [2, 4], 
+      [2, 3],
+      [1, 4],
+      [1, 3]
+    ])
+    ;
 }
 
 # Empty prefix
