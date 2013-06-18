@@ -188,7 +188,7 @@
   my $offset = ($page - 1) * $count;
   
   # Join
-  my $join_clauses = $join->{$table};
+  my $join_clauses = $join->{$table} || [];
   my $joined_tables = [];
   for my $clause (@$join_clauses) {
     my ($table) = $clause =~ / ([^ ]+) +on/;
@@ -360,7 +360,7 @@
         % }
       </div>
       <div>
-        % if ($join_clauses) {
+        % if (@$join_clauses) {
           <div>
             <span class="label" style="margin-right:5px">
               Join mode

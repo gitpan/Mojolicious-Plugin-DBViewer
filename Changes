@@ -1,5 +1,7 @@
+0.20
+  - fixex join mode display bug.
 0.19
-  - add join option and join mode
+  - add join option and join mode.
 0.18
   - columns in select field is ordered in select page.
   - add in condtion in select page.
